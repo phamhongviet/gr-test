@@ -97,3 +97,8 @@ My solution for this challenge is to write a helm chart, please take a look at [
 To run the helm chart with test:
 
     helm install <release_name> batch-jobs-min-nodes --values test_values.yaml
+
+### Setup test environment
+I use minikube to setup the test environment for this challenge:
+
+    minikube -p mkube-kvm start --nodes 2 --driver=kvm2 --extra-config=kubelet.kube-reserved=cpu=200m,memory=200Mi --extra-config=kubelet.system-reserved=cpu=200m,memory=200Mi
