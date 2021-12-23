@@ -1,0 +1,88 @@
+# Default values for batch-jobs-min-nodes.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+jobsGroup: jg1
+jobs:
+- containerName: j1
+  image:
+    repository: job1
+    tag: tag1
+    pullPolicy: Always
+  command: ["a", "b", "c"]
+  resources:
+    limits:
+      cpu: 100m
+      memory: 200Mi
+    requests:
+      cpu: 100m
+      memory: 200Mi
+- containerName: j2
+  image:
+    repository: job2
+    tag: tag2
+    pullPolicy: Always
+  command: []
+  resources:
+    limits:
+      cpu: 100m
+      memory: 200Mi
+    requests:
+      cpu: 100m
+      memory: 200Mi
+- containerName: j3
+  image:
+    repository: job3
+    tag: tag3
+    pullPolicy: Always
+  command: []
+  resources:
+    limits:
+      cpu: 400m
+      memory: 400Mi
+    requests:
+      cpu: 100m
+      memory: 200Mi
+
+affinity:
+  podAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        topologyKey: kubernetes.io/hostname
+        labelSelector:
+          matchLabels:
+            jobs-group: jg1 # It's important that this is the same value as jobsGroup. If we use helmfile, this will become a variable.
+
+restartPolicy: Never
+backoffLimit: 4
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+nodeSelector: {}
+
+tolerations: []

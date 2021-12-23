@@ -1,0 +1,50 @@
+{{- range .Values.jobs }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+# assuming one job, one pod, one container for simplicity
+  name: {{ include "batch-jobs-min-nodes.fullname" $ }}-{{ .containerName }}
+  labels:
+    jobs-group: "{{ $.Values.jobsGroup }}"
+    {{- include "batch-jobs-min-nodes.labels" $ | nindent 4 }}
+spec:
+  template:
+    metadata:
+      labels:
+        jobs-group: "{{ $.Values.jobsGroup }}"
+        {{- include "batch-jobs-min-nodes.labels" $ | nindent 8 }}
+    spec:
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "batch-jobs-min-nodes.serviceAccountName" $ }}
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      {{- with $.Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+#     assuming one job, one pod, one container for simplicity
+      containers:
+      - name: {{ .containerName }}
+        securityContext:
+          {{- toYaml $.Values.securityContext | nindent 12 }}
+        image: "{{ .image.repository }}:{{ .image.tag }}"
+        imagePullPolicy: {{ .image.pullPolicy }}
+        command:
+          {{- toYaml .command | nindent 12 }}
+        resources:
+          {{- toYaml .resources | nindent 12 }}
+      restartPolicy: "{{ $.Values.restartPolicy }}"
+  backoffLimit: {{ $.Values.backoffLimit }}
+{{- end }}
