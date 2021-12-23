@@ -42,12 +42,15 @@ With just the high level product workflow and without any further info, I can ha
 6. Spend money and time on things that directly contribute to business value
     - Consider using Amazon MQ for RabbitMQ to replace self managed RabbitMQ
     - Analyze spending data to stop spending money on unnecessary resources and services
+
 Following AWS Well Architected Framework may help a lot.
 
 My suggestion for architectural design change is to separate business code from platform code:
-    - Worker get the jobs from MQ, instead of calling K8s API to create Scan job, it do the scan itself
-    - Data Processing service get the scan result via event streaming service like Kafka instead of calling K8s API to get Scan job stdout
-    - If it makes sense, replace RabbitMQ with Kafka for Scan job MQ to simplify the tech stack
+
+- Worker get the jobs from MQ, instead of calling K8s API to create Scan job, it do the scan itself
+- Data Processing service get the scan result via event streaming service like Kafka instead of calling K8s API to get Scan job stdout
+- If it makes sense, replace RabbitMQ with Kafka for Scan job MQ to simplify the tech stack
+
 I think the service for running the business shouldn't know that it's being deployed on K8s. Avoid calling K8s API will make deploying the services on different distro of K8s and different versions of K8s much easier. These services can be even deployed on a bunch of VM or EC2 instances if needed.
 Integration with K8s using K8s API or K8s webhook or CRD should be reserved for generic helper services that add value to K8s itself.
 
@@ -58,8 +61,11 @@ The number of scan requests can increase/decrease randomly in a day and on most 
 What strategy would you suggest to save cost while still maintaining the possible performance and scan completion times?
 
 I'd recommend autoscaling pods based on the number of jobs pending in MQ (autoscaling with custom metrics is available with K8s >= 1.23), and autoscaling nodes based on resource utilization as usual. This autoscaling strategy is reactive.
+
 Another autoscaling strategy is proactive, setting different minimum number of idle pods in week days and weekend. By studying the usage pattern (from collected metrics), we can set the appropriate number of minimum pods to ensure best performance.
+
 On the other hand, optimizing startup speed of the services to a certain point will benefit autoscaling greatly.
+
 And if the architecture change with my suggestion above, i.e refactor Scan job to become long live stateless service that get the job from MQ, and send the result to Kafka; then autoscaling can be done with CPU alone, using HPA v1.
 
 ### Question 3
@@ -68,19 +74,21 @@ In step 6, each job needs to mount the source code folder into every engine that
 How would you store the source code and make sure that engines can run in a scalable way?
 
 Using AWS EFS or equivalent shared file system, each source code repo can be pulled into a directory. Multiple Scan job can mount the same source code directory from EFS. Since EFS can scale indefinitely in term of storage and throughput, the heavy lifting is already done by AWS. To save storage cost, a cleanup jobs can check for inactive source code repos in a certain amount of time and delete those repos.
+
 If my suggestion for source code storage is feasible, it'll make the problem in the latter technical challenge disappear without any code. I think the nature of that challenge is caching for the source code repos. Since we use shared file system, we create a mirror for each repo by pulling new code once. Scan job can be scheduled on any node without putting any more stress on the origin source code repos.
 
 ### Question 4
 Propose a high level disaster recovery plan for the current architecture
 
 My strategy for building a DR plan is to pick a service/function in the system, and ask the following questions:
+
 - What happen if this fail?
 - How would this fail?
 - How to mitigate when this fail?
 - What need to be backup?
 - How do we recreate a working system with what we have (backup, source code, etc.)
 
-Repeat asking these question until the answer to the first question become "business as usual, we can go back to sleep".
+Repeat asking these question until the answer to the first question become "business as usual, we can go back to sleep".        
 Usually, the most important thing to backup, with offsite backup or multi regional backup, are database, user generated data, source code and documentation. The source code should contain all the application code, infrastructure code, CI/CD pipeline code, and even the documentation.
 
 ## Technical Challenge
