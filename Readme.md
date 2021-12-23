@@ -82,3 +82,10 @@ My strategy for building a DR plan is to pick a service/function in the system, 
 
 Repeat asking these question until the answer to the first question become "business as usual, we can go back to sleep".
 Usually, the most important thing to backup, with offsite backup or multi regional backup, are database, user generated data, source code and documentation. The source code should contain all the application code, infrastructure code, CI/CD pipeline code, and even the documentation.
+
+## Technical Challenge
+My solution for this challenge is to write a helm chart, please take a look at [batch-jobs-min-nodes](./batch-jobs-min-nodes). A values file for testing purpose is included as well: [here](./test_values.yaml).
+
+To run the helm chart with test:
+
+    helm install <release_name> batch-jobs-min-nodes --values test_values.yaml
